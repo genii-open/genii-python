@@ -307,9 +307,9 @@ def save_file_as(_, name, id):
     except:
         print(traceback.format_exc())
         notif = dmc.Notification(
-            title="Failed to reset file",
+            title="Failed to save file",
             action="show",
-            message=f"Failed to reset file {path[len(g.user_data['wd']) +  1:]}",
+            message=f"Failed to save file {path[len(g.user_data['wd']) +  1:]}",
             icon=DashIconify(icon="ep:circle-close-filled", color="red", width=30)
         )
     return notif

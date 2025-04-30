@@ -1,5 +1,5 @@
 import mne
-from dash import dcc, html, callback, Output, Input, State, no_update, ctx, MATCH, ALL
+from dash import dcc, html, callback, Output, Input, State, no_update, ctx, MATCH, ALL, Patch
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 from dash_iconify import DashIconify
@@ -332,40 +332,37 @@ def update_event_options(_, id):
     Output(make_generic_id(MATCH, type="raw-event-select"), "options", allow_duplicate=True),
     Output(make_generic_id(MATCH, type="raw-event-select"), "value", allow_duplicate=True),
     Input(make_generic_id(MATCH, type="raw-graph"), 'clickData'),
-    State(make_generic_id(MATCH, type="raw-graph"), 'figure'),
+    # State(make_generic_id(MATCH, type="raw-graph"), 'figure'),
     State(make_generic_id(MATCH, type="raw-graph-annotation-switch"), "checked"),
     State(make_generic_id(MATCH, type="raw-event-select"), "value"),
     State(make_generic_id(MATCH, type="new-event-input"), "value"),
     State(make_generic_id(MATCH, type="raw-event-select"), "options"),
+    State(make_generic_id(MATCH, type="raw-graph-tmin"), "data"),
+    State(make_generic_id(MATCH, type="raw-graph-page-len"), "value"),
     prevent_initial_call=True
 )
 # FIXME Double click on the same point will not trigger callback
 # Because forntend do not consider the same/near click point data to be a "state change"
 # Even after you moved the pointer away and back 
 # So it will not send a request to backend
-def handle_click_data(clickData, fig_data, checked, ev_select, new_ev, curr_ev):
+def handle_click_data(clickData, checked, ev_select, new_ev, curr_ev, tmin, page_len):
+    if tmin is None or tmin < 0:
+        tmin = 0
+    if page_len is None or page_len <= 0:
+        page_len = _PAGE_LEN
     if checked:
-        return handle_annotate(clickData, fig_data, ev_select, new_ev, curr_ev)
+        return handle_annotate(clickData, ev_select, new_ev, curr_ev, tmin, page_len)
     else:
-        return handle_toggle_bad_ch(clickData, fig_data), no_update, no_update
+        return handle_toggle_bad_ch(clickData), no_update, no_update
 
-def handle_annotate(clickData, fig_data, ev_select, new_ev, curr_ev):
+def handle_annotate(clickData, ev_select, new_ev, curr_ev, tmin, page_len):
     # print(clickData)
     have_new_ev = ev_select == _ADD_NEW_EVENT_DROPDOWN_OPTION_VALUE
-    if have_new_ev:
-        if new_ev is None:
-            return no_update
-            #TODO error when input is empty
-        if isinstance(curr_ev, list):
-            curr_ev.append({"label": new_ev, "value": new_ev})
-        else:
-            curr_ev = [new_ev]
-        ev_select = new_ev
-        curr_ev[0]["label"]["props"]["children"]["props"]["value"] = None
     path = decode_path(ctx.triggered_id)
     raw = read_and_cache_file(path)
 
-    fig = Figure(fig_data)
+    # fig = Figure(fig_data)
+    fig = Patch()
 
     if clickData and clickData['points']:
         # 获取点击的 x 坐标（即时间点）
@@ -374,26 +371,66 @@ def handle_annotate(clickData, fig_data, ev_select, new_ev, curr_ev):
         # 检查是否已有记录线在相同位置，如果有则删除
         # If distance < 1%, then it is close enough
         # Also only delete the closest one
-        one_percent = (fig_data["layout"]["xaxis"]["range"][1] - fig_data["layout"]["xaxis"]["range"][0]) / 100
+        # one_percent = (fig_data["layout"]["xaxis"]["range"][1] - fig_data["layout"]["xaxis"]["range"][0]) / 100
+        one_percent = page_len / 100
         closest_line = None
         closest_dist = None
-        for line in fig.layout.shapes:
-            # TODO check is line
-            dist = abs(line['x0'] - click_x)
+        # for line in fig.layout.shapes:
+        #     # TODO check is line
+        #     dist = abs(line['x0'] - click_x)
+        #     if dist < one_percent and (closest_dist is None or closest_dist > dist):
+        #         closest_line = line
+        #         closest_dist = dist
+        # if closest_line is not None:
+        #     # 删除已有的标注线
+        #     # print(closest_line)
+        #     for i, a in enumerate(raw.annotations):
+        #         if a["onset"] - closest_line["x0"] < 1e-5 and a["description"] == closest_line["label"]["text"]:
+        #             raw.annotations.delete(i)
+        #             break
+        #     fig.layout.shapes = [line for line in fig.layout.shapes if line['x0'] != closest_line["x0"]]
+        for i, a in enumerate(raw.annotations): # FIXME can optimize
+            dist = abs(a["onset"] - click_x)
             if dist < one_percent and (closest_dist is None or closest_dist > dist):
-                closest_line = line
+                closest_line = i
                 closest_dist = dist
         if closest_line is not None:
-            # 删除已有的标注线
-            # print(closest_line)
-            for i, a in enumerate(raw.annotations):
-                if a["onset"] - closest_line["x0"] < 1e-5 and a["description"] == closest_line["label"]["text"]:
-                    raw.annotations.delete(i)
-                    break
-            fig.layout.shapes = [line for line in fig.layout.shapes if line['x0'] != closest_line["x0"]]
+            raw.annotations.delete(closest_line)
+            fig_shape = []
+            for ann in raw.annotations.copy().crop(tmin, tmin + page_len, use_orig_time=False):
+                # FIXME copy pasted
+                fig_shape.append(dict(
+                    line=shape.Line(
+                        dash="dot",
+                        color="green",
+                        width=1
+                    ),
+                    layer="between",
+                    x0=ann["onset"],
+                    y0=0,
+                    x1=ann["onset"],# TODO + ann["duration"],
+                    y1=1,
+                    yref="paper",
+                    label=shape.Label(
+                        text=ann["description"],
+                        textposition="top center"
+                    )
+                ))
+            fig["layout"]["shapes"] = fig_shape
         else:
             # 添加新的标注线
-            fig.add_shape(
+            # FIXME copy pasted
+            if have_new_ev:
+                if new_ev is None:
+                    return no_update
+                    #TODO error when input is empty
+                if isinstance(curr_ev, list):
+                    curr_ev.append({"label": new_ev, "value": new_ev})
+                else:
+                    curr_ev = [new_ev]
+                ev_select = new_ev
+                curr_ev[0]["label"]["props"]["children"]["props"]["value"] = None
+            fig["layout"]["shapes"].append(dict(
                 line=shape.Line(
                     dash="dot",
                     color="green",
@@ -405,7 +442,7 @@ def handle_annotate(clickData, fig_data, ev_select, new_ev, curr_ev):
                     text=ev_select,
                     textposition="top center"
                 )
-            )
+            ))
             raw.annotations.append(click_x, 0, ev_select) # TODO support of duration
             # if have_new_ev:
             #     curr_ev = [curr_ev[0], *[{"label": e, "value": e} for e in raw.annotations.count().keys()]]
@@ -414,7 +451,7 @@ def handle_annotate(clickData, fig_data, ev_select, new_ev, curr_ev):
 
     return fig, no_update if not have_new_ev else curr_ev, no_update if not have_new_ev else ev_select
 
-def handle_toggle_bad_ch(clickData, fig_data):
+def handle_toggle_bad_ch(clickData):
     path = decode_path(ctx.triggered_id)
     raw = read_and_cache_file(path)
     ch_idx = clickData["points"][0]["curveNumber"]
@@ -425,6 +462,7 @@ def handle_toggle_bad_ch(clickData, fig_data):
     else:
         color = _BAD_CH_LINE_COLOR
         raw.info["bads"].append(ch_n)
+    fig_data = Patch()
     fig_data["data"][ch_idx]["line"]["color"]=color
     cache_file(raw, FileType.RAW, True, path)
     return fig_data

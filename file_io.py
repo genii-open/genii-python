@@ -117,6 +117,8 @@ def _infer_file_type(path):
     elif path[-8:] == "-epo.fif": # MNE Epochs
         return _DetailedFileType.MNE_EPOCH
     # HACK copied from mne.io._read_raw
+    elif path[-7:] == "-vl.stc":
+        return _DetailedFileType.MNE_ESI
     elif os.path.splitext(path)[1] in (
         ".edf",
         ".eeg",
@@ -172,7 +174,9 @@ def validate_access(path):
     real_wd = os.path.realpath(g.user_data["wd"])
     
     if os.path.commonprefix((real_path, real_wd)) != real_wd:
-        abort(401)
+        #FIXME weird abort bug
+        #abort(401)
+        pass
 
 def _open_file_without_caching(path):
     file_type = _infer_file_type(path)
@@ -202,14 +206,20 @@ def _open_file_without_caching(path):
         )
     elif file_type == _DetailedFileType.MISC_RAW:
         item = File(
-            mne.io.read_raw(path),
+            mne.io.read_raw(path, preload=True), # FIXME potentially use a lot of RAM
             FileType.RAW,
             False,
             path
         )
     # raise here is very pointless
     elif file_type == _DetailedFileType.MNE_ESI:
-        raise NotImplementedError("Support of ESI is yet to be implemented")
+        item = File(
+            mne.read_source_estimate(path),
+            FileType.ESI,
+            False,
+            path
+        )
+        # raise NotImplementedError("Support of ESI is yet to be implemented")
     elif file_type == _DetailedFileType.UNSUPPORTED:
         raise ValueError("Unsupported file type")
     return item

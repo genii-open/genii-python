@@ -358,8 +358,9 @@ def perform_esi(info, tab_values):
     # inv2 = mne.minimum_norm.make_inverse_operator(ev.info, fwd2, cov, verbose=True)
     # stc2 = mne.minimum_norm.apply_inverse(ev, inv2, method=info["alg_name"])
     
-    stc_path = path + ".stc"
+    stc_path = os.path.splitext(path)[0] + "-vl.stc" # FIXME when supporting more than volumetric ESI
     # stc2_path = path + "-surf.stc"
     cache_file(stc, FileType.ESI, True, stc_path)
+    stc.save(stc_path, overwrite=True)
     # cache_file(stc2, FileType.ESI, True, stc2_path)
-    return append_to_tabs(tab_values, *render_esi_content(stc, path=stc_path, subjects_dir=subjects_dir, src=src, initial_time=ev.get_peak(ch_type="eeg")[1], tmin=ev.tmin, tmax=ev.tmax))
+    return append_to_tabs(tab_values, *render_esi_content(stc, path=stc_path, subjects_dir=subjects_dir, src=src, initial_time=ev.get_peak(ch_type="eeg")[1], tmin=ev.tmin, tmax=ev.tmax, ev_path=path))

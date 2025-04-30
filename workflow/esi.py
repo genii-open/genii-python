@@ -1,13 +1,15 @@
 import mne
 import dash_bootstrap_components as dbc
 from .util import plot_to_base64
-from dash import html, callback, Input, Output, State, no_update, dcc, MATCH
+from dash import html, callback, Input, Output, State, no_update, dcc, MATCH, Patch
 from io import BytesIO
 import base64
 # TODO do not include dot
 from path_based_id_util import make_id, make_generic_id, decode_path
 from file_io import read_and_cache_file
 import os
+from plotly.graph_objs import Layout, Scatter, Figure
+from plotly.graph_objs.layout import YAxis, Annotation, Font, shape
 
 clientside_collector = tuple()
 
@@ -22,7 +24,58 @@ def render_esi_content(esi: mne.SourceEstimate,
             src=kwargs["src"],
         ).get_figure()
     )
-    print(kwargs)
+    # print(kwargs)
+
+    ev_layout = Layout(
+        xaxis=dict(showticklabels=False, zeroline=False, showgrid=False),
+        yaxis=YAxis(
+            showticklabels=True, zeroline=True, showgrid=False, visible=True
+        ),
+        showlegend=False,
+        shapes=[
+            dict(
+                line=shape.Line(
+                    dash="dot",
+                    color="green",
+                    width=1
+                ),
+                layer="between",
+                x0=kwargs["initial_time"],
+                y0=0,
+                x1=kwargs["initial_time"],
+                y1=1,
+                yref="paper",
+            )
+        ],
+        margin=dict(l=20, r=20, t=0, b=0),
+        height=200
+    )
+    ev = read_and_cache_file(kwargs["ev_path"])
+    data = ev.get_data()
+
+    traces = [Scatter(
+        x=ev.times,
+        y=data.T[:, 0],
+        line={
+            "color": "black",
+            "width": 1
+        }
+    )]
+
+    # loop over the channels
+    for ii in range(1, ev.info["nchan"]):
+            traces.append(Scatter(
+                x=ev.times,
+                y=data.T[:, ii],
+                line={
+                    "color": "black",
+                    "width": 1
+                }
+            ))
+    ev_fig = Figure(
+        data=traces,
+        layout=ev_layout
+    )
 
     # surf_esi.plot(
     #     subject="fsaverage",
@@ -46,15 +99,15 @@ def render_esi_content(esi: mne.SourceEstimate,
                                     children=html.Img(
                                         id=make_id(kwargs["path"], type=f"img{i}"),
                                         src=f,
-                                        style={"width": "100%"},
+                                        style={"width": "70%"},
                                     )
                                 ) for i, f in enumerate(figs)
-                             ]
+                            ]
                         ),
                         dbc.Row(
                             children=dbc.Col(
                                 width=12,
-                                className="mt-3",
+                                className="mt-3 mb-3",
                                 children=dcc.Slider(
                                     id=make_id(kwargs["path"], type="esi-slider"),
                                     min=kwargs["tmin"],
@@ -62,6 +115,15 @@ def render_esi_content(esi: mne.SourceEstimate,
                                     marks={kwargs["initial_time"]: "Peak activity"},
                                     value=kwargs["initial_time"]
                                 )
+                            )
+                        ),
+                        dbc.Row(
+                            children=dbc.Col(
+                                width=12,
+                                children=dcc.Graph(
+                                    id=make_id(kwargs["path"], type="esi-ev"),
+                                    figure=ev_fig
+                                ),
                             )
                         )
                     )
@@ -74,7 +136,9 @@ def render_esi_content(esi: mne.SourceEstimate,
                     )
                 )
             )
-        )
+        ),
+                
+          
     )
 
 # HACK
@@ -92,6 +156,7 @@ def esi_plot_to_base_64(fig):
 # HACK
 @callback(
     *[Output(make_generic_id(MATCH, type=f"img{i}"), "src") for i in range(3)],
+    Output(make_generic_id(MATCH, type="esi-ev"), "figure"),
     Input(make_generic_id(MATCH, type="esi-slider"), "value"),
     State(make_generic_id(MATCH, type="esi-slider"), "id")
 )
@@ -109,4 +174,19 @@ def redraw(t, id):
             src=src,
         ).get_figure()
     )
-    return figs
+    ev_fig_patch = Patch()
+    ev_fig_patch["layout"]["shapes"] = [dict(
+        line=shape.Line(
+            dash="dot",
+            color="green",
+            width=1
+        ),
+        layer="between",
+        x0=t,
+        y0=0,
+        x1=t,
+        y1=1,
+        yref="paper",
+    )]
+
+    return *figs, ev_fig_patch
