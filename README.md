@@ -54,7 +54,7 @@ By default, the program will run in debug mode and listen on port 8892. You can 
 
 # Guidance
 
-After 
+After typing
 ```
 python app.py
 ```
