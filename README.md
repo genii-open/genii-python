@@ -64,8 +64,9 @@ in conda environment, access it via a browser at http://127.0.0.1:8892.
 
 <div align="center">
 <br>
-<img src="assets/login.png" width="1066">
+<img src="assets/login.png" width="966">
 </div>
+<br>
 
 Log in using the email and password that we provided to you.
 
