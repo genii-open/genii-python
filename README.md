@@ -52,55 +52,42 @@ python app.py
 
 By default, the program will run in debug mode and listen on port 8892. You can access it via a browser at http://127.0.0.1:8892.
 
-# Guidance
+# Workflow
 
-After typing
-```
-python app.py
-```
-in conda environment, access it via a browser at http://127.0.0.1:8892.
+The process of processing EEG data in the ```Genii-Python``` project can be divided into the following main stages:
 
-### Log In
+### Authentication And Data Uploading
+
+- Raw EEG data serves as the starting point of the entire process.
+- After authentication, users upload EEG data, which may originate from the cloud or local hardware devices.
+<br>
+(You can contact us for account if you are interested in this software.)
+
+### MNE (Signal Processing):
+
+- **Preprocessing**: The uploaded EEG data will first undergo preprocessing to prepare for subsequent analysis.<br>
+- **Event Annotation/Detection**: This step identifies specific events or patterns in the data according to its annotations.<br>
+- **ERP (Event-Related Potentials)**: Event-Related Potentials (ERP) data contains peak alignment and so on.<br>
+- **Source Estimation**: Finally, the system will perform source estimation to estimate the source of these electrophysiological activities in the brain. Source estimation supports multiple algorithms, including ```ECD```, ```MNE```, ```dSPM```, ```sLORETA```, and ```eLORETA```.
+
+### Core Control and Python Ecosystem
+
+- **Pipeline Controller**: This is a core component responsible for coordinating the entire data processing workflow, including interactions with web technologies, databases, MNE signal processing modules, and AI libraries within the Python ecosystem.<br>
+- **Web Technology**: Used for user interfaces and front-end/back-end interactions, exchanging data with the Pipeline Controller and databases.<br>
+- **Database**: Stores and manages data, communicating bidirectionally with web technologies and the Pipeline Controller.<br>
+- **AI Library**: Within the Python ecosystem, the project integrates an AI library for performing more advanced analytical tasks, such as ```Epilepsy Detection```, ```Epilepsy Classification```, ```Epilepsy Alignment```, and ```Machine Learning-based ESI (Event-Related Synchronization Index)```.
+
+### Data Visualization (DASH)
+
+- **Time series visualization**: The processed data can be visualized in time series to show the changes of signals over time.<br>
+- **ERP/topology/spectrum**: The system also supports the generation of ERP waveform, brain topology, and spectrum analysis graphs, providing multi-dimensional visualization.<br>
+- **ESI results**: Finally, the results of ESI (Event-Related Synchronization Index) will also be visualized through DASH, helping users intuitively understand the analysis results.<br>
 
 <div align="center">
 <br>
-<img src="assets/login.png" width="966">
+<img src="assets/workflow.png" width="966">
 </div>
 <br>
-
-Log in using the email and password that we provided to you.
-
-### File Upload
-
-You can enable experimental memory efficient attention on recent pytorch in ComfyUI on some AMD GPUs using this command, it should already be enabled by default on RDNA3. If this improves speed for you on latest pytorch on your GPU please report it so that I can enable it by default.
-
-```TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1 python main.py --use-pytorch-cross-attention```
-
-You can also try setting this env variable `PYTORCH_TUNABLEOP_ENABLED=1` which might speed things up at the cost of a very slow initial run.
-
-### Data Visualization
-
-You can enable experimental memory efficient attention on recent pytorch in ComfyUI on some AMD GPUs using this command, it should already be enabled by default on RDNA3. If this improves speed for you on latest pytorch on your GPU please report it so that I can enable it by default.
-
-```TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1 python main.py --use-pytorch-cross-attention```
-
-You can also try setting this env variable `PYTORCH_TUNABLEOP_ENABLED=1` which might speed things up at the cost of a very slow initial run.
-
-### Data Processing
-
-You can enable experimental memory efficient attention on recent pytorch in ComfyUI on some AMD GPUs using this command, it should already be enabled by default on RDNA3. If this improves speed for you on latest pytorch on your GPU please report it so that I can enable it by default.
-
-```TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1 python main.py --use-pytorch-cross-attention```
-
-You can also try setting this env variable `PYTORCH_TUNABLEOP_ENABLED=1` which might speed things up at the cost of a very slow initial run.
-
-### Data Saving
-
-You can enable experimental memory efficient attention on recent pytorch in ComfyUI on some AMD GPUs using this command, it should already be enabled by default on RDNA3. If this improves speed for you on latest pytorch on your GPU please report it so that I can enable it by default.
-
-```TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1 python main.py --use-pytorch-cross-attention```
-
-You can also try setting this env variable `PYTORCH_TUNABLEOP_ENABLED=1` which might speed things up at the cost of a very slow initial run.
 
 # Notes
 
