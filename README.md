@@ -18,7 +18,11 @@
   </a>
 </p>
 
-![ComfyUI Screenshot](https://github.com/user-attachments/assets/7ccaf2c1-9b72-41ae-9a89-5688c94b7abe)
+<div align="center">
+<br>
+<img src="assets/home.png" width="966">
+</div>
+<br>
 
 </div>
 
