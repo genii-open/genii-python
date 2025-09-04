@@ -26,7 +26,7 @@
 
 </div>
 
-Genii-Python enables you to process, analyze, and visualize neurophysiological data, offering user authentication, file upload, data processing, and interactive data visualization functionalities.
+```Genii-Python``` enables you to process, analyze, and visualize neurophysiological data, offering user authentication, file upload, data processing, and interactive data visualization functionalities.
 
 ## Features
 - It utilizes the mne-python library for data analysis and provides user authentication, file upload, data processing (such as filtering, reference electrode setup), and interactive data visualization functions.
@@ -67,7 +67,7 @@ The process of processing EEG data in the ```Genii-Python``` project can be divi
 <br>
 (You can contact us for account if you are interested in this software.)
 
-### MNE (Signal Processing):
+### MNE (Signal Processing)
 
 - **Preprocessing**: The uploaded EEG data will first undergo preprocessing to prepare for subsequent analysis.<br>
 - **Event Annotation/Detection**: This step identifies specific events or patterns in the data according to its annotations.<br>
